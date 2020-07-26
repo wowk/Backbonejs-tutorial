@@ -1,0 +1,274 @@
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <script type='text/javascript' src='underscore-min.js'></script>
+        <script type='text/javascript' src='jquery-3.5.1.min.js'></script>
+        <script type="text/javascript" src="backbone-min.js"></script>
+    </head>
+
+    <body>
+        <div id='container'>
+            <ul id='list'></ul>
+            <input type="button" id="add" value="add" />
+        </div>
+        <script>
+            var Model = Backbone.Model.extend({
+                /********************************************
+                 * defaults 用于设定Model的默认属性， 如果没有在
+                 * defaults中定义属性或者是没有defaults属性，
+                 * 则Model是空的
+                 * 
+                 * 使用 JSON.stringify() 可以查看其序列化后
+                 * 的值，空Model是没有值的
+                 * ******************************************/
+                defaults: {
+                    id : 10,
+                    name : "Default Name",
+                },
+
+                /*********************************************
+                 * Model 创建的时候会被调用
+                 * *******************************************/
+                initialize: function() {
+                    console.log("initialize model");
+                }
+            });
+       
+            /************************************************
+             * 这是jQuery的用法，在页面ready的时候会被调用
+             * **********************************************/
+             $(document).ready(function(){
+                console.log("Document Ready");
+                var model1 = new Model();
+                var model2 = new Model({id: 20, name: "New Name"});
+                var model3 = new Model({id: 20, name: "New Name", gender: "female"});
+
+                console.log(JSON.stringify(model1));
+                console.log(JSON.stringify(model2));
+                console.log(JSON.stringify(model3));
+
+                /*********************************************
+                 * Model.get 和 Model.set 分别用于 get/set Model
+                 * 的属性
+                 * *******************************************/
+                console.log("Get Attribute ID     : " + model1.get("id"));
+                console.log("Get Attribute Name   : " + model2.get("name"));
+                console.log("Get Attribute Gender : " + model3.get("gender"));
+                model1.set("age", 1000);
+                console.log("Get Attribute Age    : " + model1.get("age"));
+            });
+
+            /***************************************************
+             * Model事件处理
+             * *************************************************/
+            var ModelEventHandleTest = Backbone.Model.extend({
+                defaults: {
+                    id   : 10,
+                    name : "",
+                },
+
+                initialize: function() {
+                    console.log("ModeleEventHandleTest: initialize");
+                    this.bindEvents();
+                },
+                
+                /*************************************************
+                 * 使用 on 函数来处理各种事件
+                 * ***********************************************/
+                bindEvents: function() {
+                    /***********************************************************
+                     * 指定属性的值改变的时候，会调用注册的回调函数，事件的语法如下
+                     *      "change:<attr>"
+                     * *********************************************************/
+                    this.on("change:id", function(model) {
+                        console.log("ID has been changed: " + model.get("id"));
+                    });
+                    this.on("change:name", function(model) {
+                        console.log("Name has been changed: " + model.get("name"));
+                    });
+
+                    /************************************************************
+                     * 任意属性改变的时候，会调用该回调函数，事件的语法如下
+                     *      ”change"  （不指定 attr 则是针对所有）
+                     * **********************************************************/
+                    this.on("change", function(model) {
+                        console.log("Attributes Changed");
+                    });
+
+                    /*************************************************************
+                     * 发生任意事件的时候会调用该回调函数，事件语法如下
+                     *      "all"
+                     * ***********************************************************/
+                    this.on("all", function(event, model) {
+                        console.log("Some Event happened");
+                        console.log(model.get("id"))
+                    });
+                }
+            });
+            console.log("Handle Model Events");
+            var modelEventTest = new ModelEventHandleTest();
+            
+            /*********************************************************
+             * 改变Model的属性值，此时 "change:<attr>" 对应的回调函数会被调用
+             * *******************************************************/
+            modelEventTest.set("id", 20);
+            modelEventTest.set("name", "new Name");
+            
+            /**********************************************************
+             * 取消对事件 "change:id" 的处理，然后再像如下改变属性的值，此时
+             * 不在会有事件处理函数响应
+             * ********************************************************/
+            modelEventTest.off("change:id");
+
+            modelEventTest.set("id", 30);
+            modelEventTest.set("name", "new new Name");
+            modelEventTest.set("newAttr", "newAttrValue");
+
+            /***********************************************************
+             * Collection 的使用
+             * *********************************************************/
+            var ModelCollectionHandleEvent = Backbone.Model.extend({
+                defaults: {
+                    id: 0,
+                    name: "",
+                },
+
+                initialize: function() {
+                    this.bindEvents();
+                },
+
+                bindEvents: function() {
+                    /****************************************************
+                     * 当Model被添加到 Collection 中的时候，会触发这个事件
+                     * **************************************************/
+                    this.on("add", function(model, collection, options) {
+                        console.log("This Model Has Been Added to a Collection")
+                    });
+
+                    /****************************************************
+                     * 当Model被从 Collection 中移除的时候，会触发这个事件
+                     * **************************************************/
+                    this.on("remove", function(model, collection, options) {
+                        console.log("This Model Has Been Removed from a Collection")
+                    });
+
+                    /****************************************************
+                     * 当 Collection 发生诸如 add/remove 等导致其发生改变的事件
+                     * 时，会触发这个事件
+                     * **************************************************/
+                    this.on("update", function(collection, options) {
+                        console.log("Collection Has Been Update")
+                    });
+                }
+            });
+
+            var Collection = Backbone.Collection.extend({
+                model: ModelCollectionHandleEvent,
+                
+                initialize: function() {
+                    this.add(new ModelCollectionHandleEvent({"name": "model1"}));
+                    this.add(new ModelCollectionHandleEvent({"name": "model2"}));
+                    this.add(new ModelCollectionHandleEvent({"name": "model3"}));
+                    this.add(new ModelCollectionHandleEvent({"name": "model4"}));
+                    this.add(new ModelCollectionHandleEvent({"name": "model5"}));
+                }
+            });
+
+            console.log("Collect Test")
+            var collection = new Collection;
+
+            collection.each(function(model) {
+                console.log(JSON.stringify(model))
+                console.log(model.cid)
+            });
+            
+            collection.add({id: 0, name: "Hello"});
+
+            var ListItemView = Backbone.View.extend({
+                /***********************************************
+                * tagName 用于指定当前View代表的标签名称
+                ************************************************/
+                tagName: "li",
+
+                template: _.template("<%=name%>"),
+
+                /***********************************************
+                * 用于指定当前标签的属性及其innerHTML
+                ************************************************/
+                render: function() {
+                    var listItem = this.template(this.model.toJSON());
+                    /*******************************************************
+                    * 属性的设定可以有两种方式：
+                    *   1. <el>.setAttribute(<attr>, <value>)
+                    *   2. <el>.<attr> = <value>
+                    ********************************************************/
+                    //this.el.setAttribute("id", this.model.get("id"));
+                    this.el.id = this.model.get("id");
+
+                    /*******************************************************
+                    * 设定innerHTML的内容
+                    ********************************************************/
+                    this.$el.html(listItem);
+                    return this;
+                },
+            });
+
+            var ListView = Backbone.View.extend({
+                /***************************************************
+                * 设定当前View关联的element，这个很重要，因为events的处理
+                * 是和这个element相关的，如果事件发生在这个View之外，则事件
+                * callback是不会被触发的
+                ****************************************************/
+                el: $("#container"),
+                
+                /***************************************************
+                * 注册事件处理callback,
+                * 如果在此处注册的事件触发时callback没有被调用，则注意检查下
+                * 触发事件的 element 是否在 <el> 这个元素内
+                ****************************************************/
+                events: {
+                    "click #add": "createNewListItem"
+                },
+                
+                /****************************************************
+                * 事件触发时往Collection中添加一个Model
+                *****************************************************/
+                createNewListItem: function() {
+                    var listItem = new ModelCollectionHandleEvent({id: this.items.length, name: "Test"});
+                    this.items.add(listItem);
+                },
+                
+                /****************************************************
+                * Collection 中新增了Model后会丢出一个 "add" 事件
+                *****************************************************/
+                addListItem: function(model) {
+                    console.log("Add New OneA: " + JSON.stringify(model));
+                    var listItemView = new ListItemView({model: model})
+                    console.log(listItemView)
+                    // el 是View代表的元素
+                    this.$("#list").append(listItemView.render().el)
+                    //this.$("#list").append("<li>TTT</li>")
+                },
+                
+                /*****************************************************
+                * 监听 Collection 的 "add" 事件，当发生 "add" 事件后，
+                * 则添加相应的 element
+                ******************************************************/
+                initialize: function() {
+                    console.log("View Initialize");
+                    this.items = new Collection({});
+                    this.listenTo(this.items, "add", this.addListItem);
+                },
+
+                render: function() {
+                    this.$el.append("<p>Hello</p>")
+                }
+            });
+
+            var listView = new ListView({});
+
+        </script>
+        
+
+    </body>
+</html>
