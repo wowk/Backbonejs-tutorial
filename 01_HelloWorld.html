@@ -10,6 +10,7 @@
         <div id='container'>
             <ul id='list'></ul>
             <input type="button" id="add" value="add" />
+            <input type="button" id="post" value="post" />
         </div>
         <script>
             var Model = Backbone.Model.extend({
@@ -128,6 +129,7 @@
              * Collection 的使用
              * *********************************************************/
             var ModelCollectionHandleEvent = Backbone.Model.extend({
+
                 defaults: {
                     id: 0,
                     name: "",
@@ -163,6 +165,8 @@
             });
 
             var Collection = Backbone.Collection.extend({
+                url: "/post_request",
+
                 model: ModelCollectionHandleEvent,
                 
                 initialize: function() {
@@ -227,7 +231,15 @@
                 * 触发事件的 element 是否在 <el> 这个元素内
                 ****************************************************/
                 events: {
-                    "click #add": "createNewListItem"
+                    "click #add": "createNewListItem",
+                    "click #post": "postList",
+                },
+                
+                /***************************************************
+                 * 把数据post到server
+                 * *************************************************/
+                postList: function() {
+                    Backbone.sync("create", this.items);
                 },
                 
                 /****************************************************
